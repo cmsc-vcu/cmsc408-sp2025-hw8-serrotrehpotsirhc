@@ -322,8 +322,8 @@ WHERE
 execute_ddl(cnx,"""
 UPDATE wdi_country
 SET `Income Group` = 'High income',
-    `Table Name` = 'Country'
-WHERE `Short Name` = 'Venezuela';
+    `Table Name` = 'Venezuela'
+WHERE `Short Name` = 'Venezuela, RB';
 """)
 
 
@@ -339,7 +339,7 @@ SELECT
 FROM
   wdi_country
 WHERE
-  `Short Name` = 'Venezuela';
+  `Short Name` LIKE 'Venezuela%';
 """)
 
 ```
@@ -389,15 +389,26 @@ ORDER BY
 run_sql_and_return_html(cnx,"""
 SELECT
   Region,
-  SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS "High",
-  SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS "Upper middle",
-  SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS "Lower middle",
-  SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS "Low",
-  SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS "Other",
-  COUNT(*) AS "Total"
+  CAST(SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS DECIMAL(10,1)) AS "High",
+  CAST(SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS DECIMAL(10,1)) AS "Upper middle",
+  CAST(SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS DECIMAL(10,1)) AS "Lower middle",
+  CAST(SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS DECIMAL(10,1)) AS "Low",
+  CAST(SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS DECIMAL(10,1)) AS "Other",
+  CAST(COUNT(*) AS DECIMAL(10,1)) AS "Total"
 FROM
   wdi_country
 GROUP BY Region
+UNION ALL
+SELECT
+  'Total' AS Region,
+  CAST(SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS DECIMAL(10,1)) AS "High",
+  CAST(SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS DECIMAL(10,1)) AS "Upper middle",
+  CAST(SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS DECIMAL(10,1)) AS "Lower middle",
+  CAST(SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS DECIMAL(10,1)) AS "Low",
+  CAST(SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS DECIMAL(10,1)) AS "Other",
+  CAST(COUNT(*) AS DECIMAL(10,1)) AS "Total"
+FROM
+  wdi_country
 ORDER BY Region;
 """)
 
@@ -421,12 +432,15 @@ run_sql_and_return_html(cnx,"""
 SELECT
   COUNT(*) AS "Low Income Count",
   Region,
-  `Income Group`
+  'Low income' AS "Income Group"
 FROM
   wdi_country
-WHERE `Income Group` = 'Low income'
-GROUP BY Region, `Income Group`
-ORDER BY "Low Income Count" DESC
+WHERE
+  `Income Group` = 'Low income'
+GROUP BY
+  Region
+ORDER BY
+  COUNT(*) DESC
 LIMIT 1;
 """)
 
@@ -542,12 +556,11 @@ run_sql_and_return_html(cnx,"""
 WITH Counts AS (
   SELECT
     Region,
-    `Income Group`,
+    COALESCE(`Income Group`, 'Other') AS `Income Group`,
     COUNT(*) AS country_count
   FROM
     wdi_country
-  WHERE `Income Group` IS NOT NULL
-  GROUP BY Region, `Income Group`
+  GROUP BY Region, COALESCE(`Income Group`, 'Other')
 ),
 Totals AS (
   SELECT Region, SUM(country_count) AS region_total FROM Counts GROUP BY Region
@@ -634,12 +647,11 @@ ORDER BY
 run_sql_and_return_html(cnx,"""
 WITH Counts AS (
   SELECT
-    `Income Group`,
+    COALESCE(`Income Group`, 'Other') AS `Income Group`,
     COUNT(*) AS country_count
   FROM
     wdi_country
-  WHERE `Income Group` IS NOT NULL
-  GROUP BY `Income Group`
+  GROUP BY COALESCE(`Income Group`, 'Other')
 ),
 GrandTotal AS (
   SELECT SUM(country_count) AS total_countries FROM Counts
@@ -648,7 +660,7 @@ SELECT
   c.`Income Group`,
   c.country_count,
   g.total_countries,
-  ROUND((c.country_count * 100.0 / g.total_countries), 2) AS "Percent of Total"
+  ROUND((c.country_count * 100.0 / g.total_countries), 1) AS "Percent of Total"
 FROM Counts c
 CROSS JOIN GrandTotal g
 ORDER BY c.country_count DESC;
@@ -665,12 +677,12 @@ ORDER BY c.country_count DESC;
 
 2. Problem-Solving Approach: Describe your approach to tackling the more complex tasks (like Tasks 18, 23, and 24). How did you break down these problems, and what steps did you take when you encountered challenges? How would you approach a similar problem differently in the future?
 
-Whenever I ran into trouble, the most helpful debugging tool for me was using SQLTools and connecting to the remote DM to be able to manually run SQL commands to quickly understand what each command or query would do before plugging it back in. When worse came to worse, and breaking things down using the SQLTools platform wasn't helping me progress, I asked chat to help debug the more complex problems.
+Whenever I ran into trouble, the most helpful debugging tool for me was using SQLTools and connecting to the remote DM to be able to manually run SQL commands to quickly understand what each command or query would do before plugging it back in. When worse came to worse, and breaking things down using the SQLTools platform wasn't helping me progress, I asked my groupmates to help debug the more complex problems.
 
 
 3. Learning Takeaways: Consider the overall learning experience from this assignment. What were the biggest takeaways about working with SQL for data analysis and transformation? How do you think these skills will apply in real-world scenarios or future coursework?
 
-( response goes here)
+The biggest takeaways for me was finally gettting a lot of practice using SQL! This was my first time getting a ton of practice using SQL commands, and I liked how this HW was more like a SQL problem set more than anything else. That helped me focus on my work more than worrying about troubleshooting environmental issues!
 
 
 # README
