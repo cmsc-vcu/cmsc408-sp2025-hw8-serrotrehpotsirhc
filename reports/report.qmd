@@ -287,8 +287,6 @@ SELECT
   COUNT(*) AS "Country Count"
 FROM
   world_bank_data.wdi_country
-WHERE
-  `Income Group` IS NOT NULL
 GROUP BY
   `Income Group`
 ORDER BY
@@ -325,10 +323,10 @@ WHERE
 ## NOTE - if you get this wrong, all subsequent tables will be wrong!
 
 execute_ddl(cnx,"""
-UPDATE world_bank_data.wdi_country
+UPDATE wdi_country
 SET 
   `Table Name` = 'Country',
-  `Income Group` = 'Upper middle income'
+  `Income Group` = 'High income'
 WHERE
   `Short Name` = 'Venezuela';
 """)
@@ -400,15 +398,10 @@ SELECT
   SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS "Lower middle",
   SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS "Low",
   SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS "Other",
-  COUNT(`Short Name`) AS "Total"
-FROM
-  world_bank_data.wdi_country
-WHERE
-  `Table Name` = 'Country'
-GROUP BY
-  Region
-ORDER BY
-  Region
+  COUNT(*) AS "Total"
+FROM wdi_country
+GROUP BY Region
+ORDER BY Region;
 """)
 
 ```
@@ -432,16 +425,12 @@ SELECT
   COUNT(*) AS "Low Income Count",
   Region,
   `Income Group`
-FROM
-  world_bank_data.wdi_country
+FROM wdi_country
 WHERE
-  `Income Group` = 'Low income' AND `Table Name` = 'Country'
-GROUP BY
-  Region,
-  `Income Group`
-ORDER BY
-  "Low Income Count" DESC
-LIMIT 1
+  `Income Group` = 'Low income'
+GROUP BY Region, `Income Group`
+ORDER BY "Low Income Count" DESC
+LIMIT 1;
 """)
 
 ```
@@ -564,7 +553,7 @@ WITH Counts AS (
     `Income Group`,
     COUNT(*) AS country_count
   FROM
-    world_bank_data.wdi_country
+    wdi_country
   WHERE
     `Income Group` IS NOT NULL
   GROUP BY
@@ -680,7 +669,7 @@ WITH Counts AS (
     `Income Group`,
     COUNT(*) AS country_count
   FROM
-    world_bank_data.wdi_country
+    wdi_country
   WHERE
     `Income Group` IS NOT NULL
   GROUP BY
