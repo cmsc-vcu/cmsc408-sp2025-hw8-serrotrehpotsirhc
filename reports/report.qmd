@@ -96,13 +96,13 @@ List all non-countries.
 
 run_sql_and_return_html(cnx,"""
 SELECT
-  `Long Name`, Region
-FROM 
+  `Short Name`
+FROM
   world_bank_data.wdi_country
 WHERE
-  Region IS NULL
+  `Table Name` != 'Country' OR `Table Name` IS NULL
 ORDER BY
-  `Long Name`
+  `Short Name`;
 """)
 ```
 
@@ -400,9 +400,14 @@ SELECT
   SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS "Low",
   SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS "Other",
   COUNT(*) AS "Total"
-FROM wdi_country
-GROUP BY Region
-ORDER BY Region;
+FROM
+  wdi_country
+WHERE
+  `Table Name` = 'Country'
+GROUP BY
+  Region
+ORDER BY
+  Region;
 """)
 
 ```
@@ -426,9 +431,11 @@ SELECT
   COUNT(*) AS "Low Income Count",
   Region,
   `Income Group`
-FROM wdi_country
+FROM
+  wdi_country
 WHERE
   `Income Group` = 'Low income'
+  AND `Table Name` = 'Country'
 GROUP BY Region, `Income Group`
 ORDER BY "Low Income Count" DESC
 LIMIT 1;
@@ -552,9 +559,8 @@ WITH Counts AS (
     wdi_country
   WHERE
     `Income Group` IS NOT NULL
-  GROUP BY
-    Region,
-    `Income Group`
+    AND `Table Name` = 'Country'
+  GROUP BY Region, `Income Group`
 ),
 Totals AS (
   SELECT
@@ -668,26 +674,20 @@ WITH Counts AS (
     wdi_country
   WHERE
     `Income Group` IS NOT NULL
-  GROUP BY
-    `Income Group`
+    AND `Table Name` = 'Country'
+  GROUP BY `Income Group`
 ),
 GrandTotal AS (
-  SELECT
-    SUM(country_count) AS total_countries
-  FROM
-    Counts
+  SELECT SUM(country_count) AS total_countries FROM Counts
 )
 SELECT
   c.`Income Group`,
   c.country_count,
   g.total_countries,
-  ROUND((c.country_count / g.total_countries) * 100, 2) AS "Percent of Total"
-FROM
-  Counts c
-CROSS JOIN
-  GrandTotal g
-ORDER BY
-  c.country_count DESC
+  ROUND((c.country_count * 100.0 / g.total_countries), 2) AS "Percent of Total"
+FROM Counts c
+CROSS JOIN GrandTotal g
+ORDER BY c.country_count DESC;
 """)
 
 ```
