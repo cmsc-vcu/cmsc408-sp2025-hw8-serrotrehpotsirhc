@@ -2,6 +2,10 @@
 title: Homework 8 - World Bank Analysis
 ---
 
+We are back again! This time we are working through Hw8, the SQL Funhouse! We are going to work through 21 queries involving our remote country database, and manipulating a local copy of the database, which we will create in Task # 4. I am extremely excited to share the results with you! Here are each of the queries, their code, and the results!
+
+Ready to learn more SQL? Let's go!
+
 GITHUB URL:  <https://github.com/cmsc-vcu/cmsc408-sp2025-hw8-serrotrehpotsirhc.git>
 
 
@@ -96,7 +100,7 @@ SELECT
 FROM
   world_bank_data.wdi_country
 WHERE
-  `Income Group` IS NULL
+  Region IS NULL
 ORDER BY
   `Short Name`
 """)
@@ -283,6 +287,8 @@ SELECT
   COUNT(*) AS "Country Count"
 FROM
   world_bank_data.wdi_country
+WHERE
+  `Income Group` IS NOT NULL
 GROUP BY
   `Income Group`
 ORDER BY
@@ -324,7 +330,7 @@ UPDATE
 SET
   `Income Group` = 'High income'
 WHERE
-  `Short Name` = 'Brunei Darussalam'
+  `Short Name` = 'Venezuela'
   AND `Income Group` IS NULL;
 """)
 
@@ -394,11 +400,10 @@ SELECT
   SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS "Upper middle",
   SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS "Lower middle",
   SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS "Low",
-  COUNT(*) AS "Total"
+  SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS "Other",
+  COUNT(`Short Name`) AS "Total"
 FROM
   world_bank_data.wdi_country
-WHERE
-  `Income Group` IS NOT NULL
 GROUP BY
   Region
 ORDER BY
