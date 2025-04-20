@@ -120,6 +120,7 @@ drop table if exists wdi_country;
 """)
 ```
 
+
 ```{python}
 # create table
 execute_ddl(cnx,"""
@@ -320,10 +321,9 @@ WHERE
 
 execute_ddl(cnx,"""
 UPDATE wdi_country
-SET
-  `Income Group` = 'High income'
-WHERE
-  `Short Name` = 'Venezuela';
+SET `Income Group` = 'High income',
+    `Table Name` = 'Country'
+WHERE `Short Name` = 'Venezuela';
 """)
 
 
