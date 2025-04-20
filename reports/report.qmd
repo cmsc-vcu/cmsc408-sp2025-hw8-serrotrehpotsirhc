@@ -339,7 +339,7 @@ SELECT
 FROM
   wdi_country
 WHERE
-  `Short Name` LIKE 'Venezuela%';
+  `Short Name` LIKE 'Venezuela';
 """)
 
 ```
@@ -673,7 +673,7 @@ ORDER BY c.country_count DESC;
 
 1. Reflect on the SQL skills you used throughout these exercises. Which skills do you feel most confident in, and which do you think need more practice? How has this assignment helped you build or reinforce specific SQL competencies?
 
-( response goes here)
+I feel most confident in Select statements, with the WHERE filtering. I liked building these SQL queries. I felt confide
 
 2. Problem-Solving Approach: Describe your approach to tackling the more complex tasks (like Tasks 18, 23, and 24). How did you break down these problems, and what steps did you take when you encountered challenges? How would you approach a similar problem differently in the future?
 
@@ -682,7 +682,7 @@ Whenever I ran into trouble, the most helpful debugging tool for me was using SQ
 
 3. Learning Takeaways: Consider the overall learning experience from this assignment. What were the biggest takeaways about working with SQL for data analysis and transformation? How do you think these skills will apply in real-world scenarios or future coursework?
 
-The biggest takeaways for me was finally gettting a lot of practice using SQL! This was my first time getting a ton of practice using SQL commands, and I liked how this HW was more like a SQL problem set more than anything else. That helped me focus on my work more than worrying about troubleshooting environmental issues!
+The biggest takeaways for me was finally gettting a lot of practice using SQL! This was my first time getting a ton of practice using SQL commands, and I liked how this HW was more like a SQL problem set more than anything else. That helped me focus on my work more than worrying about troubleshooting environmental issues! These skills will propel me to be able to work with Databases in real life scenarios! This course was a great crash course into SQL, and now I will know how to actually alter Databases for real life application! I have SQL added to my toolset as a developer! It's actually rather fun working with Databses and SQL queries! But maybe that is my naivety!
 
 
 # README
