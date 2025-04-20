@@ -283,12 +283,10 @@ SELECT
   COUNT(*) AS "Country Count"
 FROM
   world_bank_data.wdi_country
-WHERE
-  `Income Group` IS NOT NULL
 GROUP BY
   `Income Group`
 ORDER BY
-  "Country Count" DESC
+  "Country Count" DESC;
 """)
 
 ```
@@ -296,22 +294,18 @@ ORDER BY
 ## Task 12
 
 ```{python}
-## Mystery task.  Looking at the table from Task 11 (anything odd?) write the
-## next obvious query based on the results in the table.
-## At a minimum, your query should put country short name in the first column.
-## you will be scored on the number of records returned and the value(s) 
-## in the first column.
+## This task depends on fixing Task 11. 1 country has NULL for income but has a region: Brunei Darussalam. All others are aggregates (non-countries).
 
 run_sql_and_return_html(cnx,"""
 SELECT
   `Short Name`,
+  `Region`,
   `Income Group`
 FROM
   world_bank_data.wdi_country
 WHERE
   `Income Group` IS NULL
-ORDER BY
-  `Short Name`
+  AND Region IS NOT NULL;
 """)
 
 ```
