@@ -91,9 +91,14 @@ List all non-countries.
 ## (skills: select, where)
 
 run_sql_and_return_html(cnx,"""
-Select *
-From world_bank_data.wdi_country
-Where `Income Group` IS NULL
+SELECT
+  `Short Name`
+FROM
+  world_bank_data.wdi_country
+WHERE
+  `Income Group` IS NULL
+ORDER BY
+  `Short Name`
 """)
 ```
 
@@ -118,10 +123,10 @@ drop table if exists wdi_country;
 ```{python}
 # create table
 execute_ddl(cnx,"""
-CREATE TABLE wdi_country
+CREATE TABLE wdi_country AS
 SELECT *
 FROM world_bank_data.wdi_country
-WHERE `Income Group` IS NOT NULL;
+WHERE Region IS NOT NULL;
 """)
 ```
 
@@ -143,12 +148,9 @@ According to the World Bank, in 2020 there were how many countries in the world?
 ## (skills: select, aggregate)
 
 run_sql_and_return_html(cnx,"""
-SELECT
-  COUNT(*) AS "Country Count"
-FROM
-  world_bank_data.wdi_country
-WHERE
-  `Income Group` IS NOT NULL
+SELECT COUNT(*) AS "Country Count"
+FROM world_bank_data.wdi_country
+WHERE Region IS NOT NULL;
 """)
 
 ```
@@ -165,12 +167,10 @@ What are all unique values of region in the wdi_country table?
 ## (skills: select, aggregate, order by)
 
 run_sql_and_return_html(cnx,"""
-SELECT DISTINCT
-  Region
-FROM
-  world_bank_data.wdi_country
-ORDER BY
-  Region
+SELECT DISTINCT Region
+FROM world_bank_data.wdi_country
+WHERE Region IS NOT NULL
+ORDER BY Region;
 """)
 
 ```
