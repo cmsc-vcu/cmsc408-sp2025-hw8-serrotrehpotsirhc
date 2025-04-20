@@ -4,7 +4,15 @@ title: Homework 8 - World Bank Analysis
 
 We are back again! This time we are working through Hw8, the SQL Funhouse! We are going to work through 21 queries involving our remote country database, and manipulating a local copy of the database, which we will create in Task # 4. I am extremely excited to share the results with you! Here are each of the queries, their code, and the results!
 
+For this assignment we’ll be using data pulled containing WDI data. The World Bank is an international financial institution that provides financial and technical assistance to developing countries around the world.
 
+Its primary goal is to reduce poverty and promote economic development by offering loans, grants, and expertise for various projects, such as infrastructure development, education, and healthcare.
+
+The World Development Indicators (WDI) is a comprehensive and extensive database maintained by the World Bank, offering a wealth of statistical information on various facets of global development.
+
+It includes data on economic indicators like GDP, inflation rates, and trade, as well as social indicators such as education, health, and poverty.
+
+Researchers, policymakers, analysts and students in CMSC 408 use the WDI to track development progress, conduct comparative analyses, and make informed decisions to improve the well-being of people around the world.
 
 Ready to learn more SQL? Let's go!
 
@@ -390,7 +398,7 @@ ORDER BY
 
 run_sql_and_return_html(cnx,"""
 SELECT
-  Region,
+  COALESCE(Region, 'Other') AS Region,
   SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS "High",
   SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS "Upper middle",
   SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS "Lower middle",
@@ -398,10 +406,8 @@ SELECT
   SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS "Other"
 FROM
   world_bank_data.wdi_country
-WHERE
-  Region IS NOT NULL
 GROUP BY
-  Region
+  COALESCE(Region, 'Other')
 ORDER BY
   Region;
 """)
@@ -547,60 +553,56 @@ ORDER BY ap.Region, ap.`Income Group`;
 ## (skills: select, where, subqueries, joins, aggregate functions)
 
 run_sql_and_return_html(cnx,"""
-WITH Counts AS (
-  SELECT
-    Region,
-    `Income Group`,
-    COUNT(*) AS country_count
-  FROM
-    world_bank_data.wdi_country
-  WHERE
-    Region IS NOT NULL AND `Income Group` IS NOT NULL
-  GROUP BY
-    Region, `Income Group`
+WITH Regions AS (
+  SELECT DISTINCT Region FROM world_bank_data.wdi_country WHERE Region IS NOT NULL
 ),
-Totals AS (
-  SELECT
-    Region,
-    SUM(country_count) AS region_total
-  FROM
-    Counts
-  GROUP BY
-    Region
+IncomeGroups AS (
+  SELECT DISTINCT `Income Group` FROM world_bank_data.wdi_country WHERE `Income Group` IS NOT NULL
+),
+AllCombinations AS (
+  SELECT r.Region, i.`Income Group`
+  FROM Regions r
+  CROSS JOIN IncomeGroups i
+),
+CountryCounts AS (
+  SELECT Region, `Income Group`, COUNT(*) AS country_count
+  FROM world_bank_data.wdi_country
+  WHERE Region IS NOT NULL AND `Income Group` IS NOT NULL
+  GROUP BY Region, `Income Group`
+),
+Combined AS (
+  SELECT ac.Region, ac.`Income Group`, COALESCE(cc.country_count, 0) AS country_count
+  FROM AllCombinations ac
+  LEFT JOIN CountryCounts cc
+    ON ac.Region = cc.Region AND ac.`Income Group` = cc.`Income Group`
+),
+RegionTotals AS (
+  SELECT Region, SUM(country_count) AS region_total
+  FROM Combined
+  GROUP BY Region
 ),
 IncomeTotals AS (
-  SELECT
-    `Income Group`,
-    SUM(country_count) AS income_total
-  FROM
-    Counts
-  GROUP BY
-    `Income Group`
+  SELECT `Income Group`, SUM(country_count) AS income_total
+  FROM Combined
+  GROUP BY `Income Group`
 ),
 GrandTotal AS (
-  SELECT
-    SUM(country_count) AS total_countries
-  FROM
-    Counts
+  SELECT SUM(country_count) AS total_countries FROM Combined
 )
 SELECT
   c.Region,
   c.`Income Group`,
   c.country_count,
-  t.region_total,
-  i.income_total,
-  g.total_countries,
-  ROUND((c.country_count * 100.0 / g.total_countries), 2) AS percent_of_total
+  rt.region_total,
+  it.income_total,
+  gt.total_countries,
+  ROUND((c.country_count * 100.0 / gt.total_countries), 2) AS percent_of_total
 FROM
-  Counts c
-JOIN
-  Totals t ON c.Region = t.Region
-JOIN
-  IncomeTotals i ON c.`Income Group` = i.`Income Group`
-CROSS JOIN
-  GrandTotal g
-ORDER BY
-  c.Region, c.`Income Group`;
+  Combined c
+JOIN RegionTotals rt ON c.Region = rt.Region
+JOIN IncomeTotals it ON c.`Income Group` = it.`Income Group`
+JOIN GrandTotal gt
+ORDER BY c.Region, c.`Income Group`;
 """)
 
 
@@ -663,12 +665,14 @@ ORDER BY
 run_sql_and_return_html(cnx,"""
 WITH Counts AS (
   SELECT
-    COALESCE(`Income Group`, 'Other') AS `Income Group`,
+    `Income Group`,
     COUNT(*) AS country_count
   FROM
     world_bank_data.wdi_country
+  WHERE
+    `Income Group` IS NOT NULL
   GROUP BY
-    COALESCE(`Income Group`, 'Other')
+    `Income Group`
 ),
 GrandTotal AS (
   SELECT
