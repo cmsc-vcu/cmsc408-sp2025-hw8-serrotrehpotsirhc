@@ -95,14 +95,10 @@ List all non-countries.
 ## (skills: select, where)
 
 run_sql_and_return_html(cnx,"""
-SELECT
-  `Short Name`
-FROM
-  world_bank_data.wdi_country
-WHERE
-  `Table Name` != 'Country' OR `Table Name` IS NULL
-ORDER BY
-  `Short Name`;
+SELECT `Short Name`
+FROM world_bank_data.wdi_country
+WHERE `Region` IS NULL
+ORDER BY `Short Name`;
 """)
 ```
 
@@ -402,12 +398,8 @@ SELECT
   COUNT(*) AS "Total"
 FROM
   wdi_country
-WHERE
-  `Table Name` = 'Country'
-GROUP BY
-  Region
-ORDER BY
-  Region;
+GROUP BY Region
+ORDER BY Region;
 """)
 
 ```
@@ -433,9 +425,7 @@ SELECT
   `Income Group`
 FROM
   wdi_country
-WHERE
-  `Income Group` = 'Low income'
-  AND `Table Name` = 'Country'
+WHERE `Income Group` = 'Low income'
 GROUP BY Region, `Income Group`
 ORDER BY "Low Income Count" DESC
 LIMIT 1;
@@ -557,34 +547,17 @@ WITH Counts AS (
     COUNT(*) AS country_count
   FROM
     wdi_country
-  WHERE
-    `Income Group` IS NOT NULL
-    AND `Table Name` = 'Country'
+  WHERE `Income Group` IS NOT NULL
   GROUP BY Region, `Income Group`
 ),
 Totals AS (
-  SELECT
-    Region,
-    SUM(country_count) AS region_total
-  FROM
-    Counts
-  GROUP BY
-    Region
+  SELECT Region, SUM(country_count) AS region_total FROM Counts GROUP BY Region
 ),
 IncomeTotals AS (
-  SELECT
-    `Income Group`,
-    SUM(country_count) AS income_total
-  FROM
-    Counts
-  GROUP BY
-    `Income Group`
+  SELECT `Income Group`, SUM(country_count) AS income_total FROM Counts GROUP BY `Income Group`
 ),
 GrandTotal AS (
-  SELECT
-    SUM(country_count) AS total_countries
-  FROM
-    Counts
+  SELECT SUM(country_count) AS total_countries FROM Counts
 )
 SELECT
   c.Region,
@@ -593,18 +566,12 @@ SELECT
   t.region_total,
   i.income_total,
   g.total_countries,
-  ROUND((c.country_count / g.total_countries) * 100, 2) AS percent_of_total
-FROM
-  Counts c
-JOIN
-  Totals t ON c.Region = t.Region
-JOIN
-  IncomeTotals i ON c.`Income Group` = i.`Income Group`
-CROSS JOIN
-  GrandTotal g
-ORDER BY
-  c.Region,
-  c.`Income Group`
+  ROUND((c.country_count * 100.0 / g.total_countries), 2) AS percent_of_total
+FROM Counts c
+JOIN Totals t ON c.Region = t.Region
+JOIN IncomeTotals i ON c.`Income Group` = i.`Income Group`
+CROSS JOIN GrandTotal g
+ORDER BY c.Region, c.`Income Group`;
 """)
 
 
@@ -672,9 +639,7 @@ WITH Counts AS (
     COUNT(*) AS country_count
   FROM
     wdi_country
-  WHERE
-    `Income Group` IS NOT NULL
-    AND `Table Name` = 'Country'
+  WHERE `Income Group` IS NOT NULL
   GROUP BY `Income Group`
 ),
 GrandTotal AS (
