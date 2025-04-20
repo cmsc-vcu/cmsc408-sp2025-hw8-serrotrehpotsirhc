@@ -404,10 +404,9 @@ SELECT
   SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS upper_middle_income,
   SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS lower_middle_income,
   SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS low_income,
-  SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS other_income,
   CAST(COUNT(*) AS DECIMAL(5,1)) AS row_total
 FROM wdi_country
-GROUP BY COALESCE(`Region`, 'Other')
+GROUP BY COALESCE(`Region`, 'Other`)
 ORDER BY region;
 """)
 
