@@ -96,13 +96,13 @@ List all non-countries.
 
 run_sql_and_return_html(cnx,"""
 SELECT
-  `Long Name`, Region
+  `Short Name`
 FROM 
   world_bank_data.wdi_country
 WHERE
-  Region IS NULL
+  `Table Name` != 'Country' OR `Table Name` IS NULL
 ORDER BY
-  `Long Name`
+  `Short Name`;
 """)
 ```
 
@@ -343,7 +343,7 @@ SELECT
 FROM
   wdi_country
 WHERE
-  `Short Name` = 'Brunei Darussalam';
+  `Short Name` = 'Venezuela';
 """)
 
 ```
@@ -502,7 +502,7 @@ WITH AllPairs AS (
     (SELECT DISTINCT `Income Group` FROM world_bank_data.wdi_country WHERE `Income Group` IS NOT NULL) i
 ),
 ExistingPairs AS (
-  SELECT
+  SELECT DISTINCT
     Region,
     `Income Group`
   FROM
@@ -511,19 +511,14 @@ ExistingPairs AS (
     `Income Group` IS NOT NULL
 )
 SELECT
-  AllPairs.Region,
-  AllPairs.`Income Group`
-FROM
-  AllPairs
-LEFT JOIN
-  ExistingPairs
-  ON AllPairs.Region = ExistingPairs.Region
-  AND AllPairs.`Income Group` = ExistingPairs.`Income Group`
-WHERE
-  ExistingPairs.Region IS NULL
-ORDER BY
-  AllPairs.Region,
-  AllPairs.`Income Group`
+  ap.Region,
+  ap.`Income Group`,
+  'Missing' AS Status
+FROM AllPairs ap
+LEFT JOIN ExistingPairs ep
+  ON ap.Region = ep.Region AND ap.`Income Group` = ep.`Income Group`
+WHERE ep.Region IS NULL
+ORDER BY ap.Region, ap.`Income Group`;
 """)
 
 ```
