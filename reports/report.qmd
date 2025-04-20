@@ -406,7 +406,7 @@ SELECT
   SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS low_income,
   CAST(COUNT(*) AS DECIMAL(5,1)) AS row_total
 FROM wdi_country
-GROUP BY COALESCE(`Region`, 'Other`)
+GROUP BY COALESCE(`Region`, 'Other')
 ORDER BY region;
 """)
 
