@@ -95,14 +95,10 @@ List all non-countries.
 ## (skills: select, where)
 
 run_sql_and_return_html(cnx,"""
-SELECT
-  `Short Name`
-FROM
-  world_bank_data.wdi_country
-WHERE
-  Region IS NULL
-ORDER BY
-  `Short Name`
+SELECT `Short Name`
+FROM world_bank_data.wdi_country
+WHERE `Table Name` != 'Country' OR `Table Name` IS NULL
+ORDER BY `Short Name`
 """)
 ```
 
@@ -325,13 +321,12 @@ WHERE
 ## NOTE - if you get this wrong, all subsequent tables will be wrong!
 
 execute_ddl(cnx,"""
-UPDATE
-  wdi_country
-SET
-  `Income Group` = 'High income'
+UPDATE world_bank_data.wdi_country
+SET 
+  `Table Name` = 'Country',
+  `Income Group` = 'Upper middle income'
 WHERE
-  `Short Name` = 'Venezuela'
-  AND `Income Group` IS NULL;
+  `Short Name` = 'Venezuela';
 """)
 
 
@@ -404,6 +399,8 @@ SELECT
   COUNT(`Short Name`) AS "Total"
 FROM
   world_bank_data.wdi_country
+WHERE
+  `Table Name` = 'Country'
 GROUP BY
   Region
 ORDER BY
@@ -434,7 +431,7 @@ SELECT
 FROM
   world_bank_data.wdi_country
 WHERE
-  `Income Group` = 'Low income'
+  `Income Group` = 'Low income' AND `Table Name` = 'Country'
 GROUP BY
   Region,
   `Income Group`
