@@ -321,7 +321,6 @@ WHERE
 execute_ddl(cnx,"""
 UPDATE wdi_country
 SET
-  `Table Name` = 'Country',
   `Income Group` = 'High income'
 WHERE
   `Short Name` = 'Venezuela';
