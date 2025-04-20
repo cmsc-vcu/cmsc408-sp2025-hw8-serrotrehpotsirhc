@@ -399,18 +399,17 @@ ORDER BY
 
 run_sql_and_return_html(cnx,"""
 SELECT
-  COALESCE(Region, 'Other') AS Region,
-  SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS "High",
-  SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS "Upper middle",
-  SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS "Lower middle",
-  SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS "Low",
-  SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS "Other"
+  `Region`,
+  `Income Group`,
+  COUNT(*) AS country_count
 FROM
-  world_bank_data.wdi_country
+  wdi_country
+WHERE
+  `Region` IS NOT NULL AND `Income Group` IS NOT NULL
 GROUP BY
-  COALESCE(Region, 'Other')
+  `Region`, `Income Group`
 ORDER BY
-  Region;
+  `Region`, `Income Group`;
 """)
 
 ```
@@ -554,58 +553,38 @@ ORDER BY ap.Region, ap.`Income Group`;
 ## (skills: select, where, subqueries, joins, aggregate functions)
 
 run_sql_and_return_html(cnx,"""
-WITH Regions AS (
-  SELECT DISTINCT Region FROM world_bank_data.wdi_country WHERE Region IS NOT NULL
-),
-IncomeGroups AS (
-  SELECT DISTINCT `Income Group` FROM world_bank_data.wdi_country WHERE `Income Group` IS NOT NULL
-),
-AllCombinations AS (
-  SELECT r.Region, i.`Income Group`
-  FROM Regions r
-  CROSS JOIN IncomeGroups i
-),
-CountryCounts AS (
-  SELECT Region, `Income Group`, COUNT(*) AS country_count
-  FROM world_bank_data.wdi_country
-  WHERE Region IS NOT NULL AND `Income Group` IS NOT NULL
-  GROUP BY Region, `Income Group`
-),
-Combined AS (
-  SELECT ac.Region, ac.`Income Group`, COALESCE(cc.country_count, 0) AS country_count
-  FROM AllCombinations ac
-  LEFT JOIN CountryCounts cc
-    ON ac.Region = cc.Region AND ac.`Income Group` = cc.`Income Group`
-),
-RegionTotals AS (
-  SELECT Region, SUM(country_count) AS region_total
-  FROM Combined
-  GROUP BY Region
-),
-IncomeTotals AS (
-  SELECT `Income Group`, SUM(country_count) AS income_total
-  FROM Combined
-  GROUP BY `Income Group`
+WITH Counts AS (
+  SELECT
+    `Region`,
+    `Income Group`,
+    COUNT(*) AS country_count
+  FROM
+    wdi_country
+  WHERE
+    `Region` IS NOT NULL AND `Income Group` IS NOT NULL
+  GROUP BY
+    `Region`, `Income Group`
 ),
 GrandTotal AS (
-  SELECT COUNT(*) AS total_countries
-  FROM world_bank_data.wdi_country
-  WHERE Region IS NOT NULL AND `Income Group` IS NOT NULL
+  SELECT
+    COUNT(*) AS total_countries
+  FROM
+    wdi_country
+  WHERE
+    `Region` IS NOT NULL AND `Income Group` IS NOT NULL
 )
 SELECT
-  c.Region,
+  c.`Region`,
   c.`Income Group`,
   c.country_count,
-  rt.region_total,
-  it.income_total,
-  gt.total_countries,
-  ROUND((c.country_count * 100.0 / gt.total_countries), 2) AS percent_of_total
+  g.total_countries,
+  ROUND((c.country_count * 100.0 / g.total_countries), 1) AS "Percent of Total"
 FROM
-  Combined c
-JOIN RegionTotals rt ON c.Region = rt.Region
-JOIN IncomeTotals it ON c.`Income Group` = it.`Income Group`
-JOIN GrandTotal gt
-ORDER BY c.Region, c.`Income Group`;
+  Counts c
+CROSS JOIN
+  GrandTotal g
+ORDER BY
+  c.country_count DESC;
 """)
 
 
@@ -671,9 +650,9 @@ WITH Counts AS (
     `Income Group`,
     COUNT(*) AS country_count
   FROM
-    world_bank_data.wdi_country
+    wdi_country
   WHERE
-    Region IS NOT NULL AND `Income Group` IS NOT NULL
+    `Income Group` IS NOT NULL
   GROUP BY
     `Income Group`
 ),
@@ -681,9 +660,9 @@ GrandTotal AS (
   SELECT
     COUNT(*) AS total_countries
   FROM
-    world_bank_data.wdi_country
+    wdi_country
   WHERE
-    Region IS NOT NULL AND `Income Group` IS NOT NULL
+    `Income Group` IS NOT NULL
 )
 SELECT
   c.`Income Group`,
