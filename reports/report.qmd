@@ -399,17 +399,16 @@ ORDER BY
 
 run_sql_and_return_html(cnx,"""
 SELECT
-  `Region`,
-  `Income Group`,
-  COUNT(*) AS country_count
-FROM
-  wdi_country
-WHERE
-  `Region` IS NOT NULL AND `Income Group` IS NOT NULL
-GROUP BY
-  `Region`, `Income Group`
-ORDER BY
-  `Region`, `Income Group`;
+  COALESCE(`Region`, 'Other') AS region,
+  SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS high_income,
+  SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS upper_middle_income,
+  SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS lower_middle_income,
+  SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS low_income,
+  SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS other_income,
+  COUNT(*) AS row_total
+FROM wdi_country
+GROUP BY COALESCE(`Region`, 'Other')
+ORDER BY region;
 """)
 
 ```
@@ -553,38 +552,42 @@ ORDER BY ap.Region, ap.`Income Group`;
 ## (skills: select, where, subqueries, joins, aggregate functions)
 
 run_sql_and_return_html(cnx,"""
-WITH Counts AS (
+WITH base AS (
   SELECT
-    `Region`,
-    `Income Group`,
-    COUNT(*) AS country_count
-  FROM
-    wdi_country
-  WHERE
-    `Region` IS NOT NULL AND `Income Group` IS NOT NULL
-  GROUP BY
-    `Region`, `Income Group`
+    COALESCE(`Region`, 'Other') AS region,
+    `Income Group` AS income_group,
+    COUNT(*) AS count
+  FROM wdi_country
+  GROUP BY COALESCE(`Region`, 'Other'), `Income Group`
 ),
-GrandTotal AS (
+totals AS (
   SELECT
-    COUNT(*) AS total_countries
-  FROM
-    wdi_country
-  WHERE
-    `Region` IS NOT NULL AND `Income Group` IS NOT NULL
+    region,
+    SUM(count) AS region_total
+  FROM base
+  GROUP BY region
+),
+overall_total AS (
+  SELECT SUM(count) AS grand_total FROM base
+),
+income_totals AS (
+  SELECT income_group, SUM(count) AS income_total
+  FROM base
+  GROUP BY income_group
 )
 SELECT
-  c.`Region`,
-  c.`Income Group`,
-  c.country_count,
-  g.total_countries,
-  ROUND((c.country_count * 100.0 / g.total_countries), 1) AS "Percent of Total"
-FROM
-  Counts c
-CROSS JOIN
-  GrandTotal g
-ORDER BY
-  c.country_count DESC;
+  b.region,
+  b.income_group,
+  b.count,
+  t.region_total,
+  i.income_total,
+  o.grand_total,
+  ROUND(100.0 * b.count / o.grand_total, 2) AS pct_of_total
+FROM base b
+JOIN totals t ON b.region = t.region
+JOIN income_totals i ON b.income_group = i.income_group
+CROSS JOIN overall_total o
+ORDER BY b.region, b.income_group;
 """)
 
 
