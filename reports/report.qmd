@@ -553,56 +553,43 @@ ORDER BY ap.Region, ap.`Income Group`;
 ## (skills: select, where, subqueries, joins, aggregate functions)
 
 run_sql_and_return_html(cnx,"""
-WITH Regions AS (
-  SELECT DISTINCT Region FROM world_bank_data.wdi_country WHERE Region IS NOT NULL
+WITH region_list AS (
+  SELECT DISTINCT Region
+  FROM world_bank_data.wdi_country
+  WHERE Region IS NOT NULL
 ),
-IncomeGroups AS (
-  SELECT DISTINCT `Income Group` FROM world_bank_data.wdi_country WHERE `Income Group` IS NOT NULL
+income_list AS (
+  SELECT DISTINCT `Income Group` AS income_group
+  FROM world_bank_data.wdi_country
+  WHERE `Income Group` IS NOT NULL
 ),
-AllCombinations AS (
-  SELECT r.Region, i.`Income Group`
-  FROM Regions r
-  CROSS JOIN IncomeGroups i
+region_income_combo AS (
+  SELECT r.Region, i.income_group
+  FROM region_list r
+  CROSS JOIN income_list i
 ),
-CountryCounts AS (
-  SELECT Region, `Income Group`, COUNT(*) AS country_count
+country_counts AS (
+  SELECT Region, `Income Group`, COUNT(*) AS cnt
   FROM world_bank_data.wdi_country
   WHERE Region IS NOT NULL AND `Income Group` IS NOT NULL
   GROUP BY Region, `Income Group`
 ),
-Combined AS (
-  SELECT ac.Region, ac.`Income Group`, COALESCE(cc.country_count, 0) AS country_count
-  FROM AllCombinations ac
-  LEFT JOIN CountryCounts cc
-    ON ac.Region = cc.Region AND ac.`Income Group` = cc.`Income Group`
-),
-RegionTotals AS (
-  SELECT Region, SUM(country_count) AS region_total
-  FROM Combined
+region_totals AS (
+  SELECT Region, COUNT(*) AS total
+  FROM world_bank_data.wdi_country
+  WHERE Region IS NOT NULL AND `Income Group` IS NOT NULL
   GROUP BY Region
-),
-IncomeTotals AS (
-  SELECT `Income Group`, SUM(country_count) AS income_total
-  FROM Combined
-  GROUP BY `Income Group`
-),
-GrandTotal AS (
-  SELECT SUM(country_count) AS total_countries FROM Combined
 )
 SELECT
-  c.Region,
-  c.`Income Group`,
-  c.country_count,
-  rt.region_total,
-  it.income_total,
-  gt.total_countries,
-  ROUND((c.country_count * 100.0 / gt.total_countries), 2) AS percent_of_total
-FROM
-  Combined c
-JOIN RegionTotals rt ON c.Region = rt.Region
-JOIN IncomeTotals it ON c.`Income Group` = it.`Income Group`
-JOIN GrandTotal gt
-ORDER BY c.Region, c.`Income Group`;
+  ric.Region,
+  ric.income_group,
+  ROUND(COALESCE(cc.cnt, 0) * 100.0 / rt.total, 1) AS pct
+FROM region_income_combo ric
+LEFT JOIN country_counts cc
+  ON ric.Region = cc.Region AND ric.income_group = cc.`Income Group`
+JOIN region_totals rt
+  ON ric.Region = rt.Region
+ORDER BY ric.Region, ric.income_group;
 """)
 
 
@@ -663,34 +650,28 @@ ORDER BY
 ## (This is much simpler than task 20!)
 
 run_sql_and_return_html(cnx,"""
-WITH Counts AS (
-  SELECT
-    `Income Group`,
-    COUNT(*) AS country_count
-  FROM
-    world_bank_data.wdi_country
-  WHERE
-    `Income Group` IS NOT NULL
-  GROUP BY
-    `Income Group`
+WITH country_counts AS (
+  SELECT Region, `Income Group`, COUNT(*) AS cnt
+  FROM world_bank_data.wdi_country
+  WHERE Region IS NOT NULL AND `Income Group` IS NOT NULL
+  GROUP BY Region, `Income Group`
 ),
-GrandTotal AS (
-  SELECT
-    SUM(country_count) AS total_countries
-  FROM
-    Counts
+region_totals AS (
+  SELECT Region, COUNT(*) AS total
+  FROM world_bank_data.wdi_country
+  WHERE Region IS NOT NULL AND `Income Group` IS NOT NULL
+  GROUP BY Region
 )
 SELECT
-  c.`Income Group`,
-  c.country_count,
-  g.total_countries,
-  ROUND((c.country_count * 100.0 / g.total_countries), 1) AS "Percent of Total"
-FROM
-  Counts c
-CROSS JOIN
-  GrandTotal g
-ORDER BY
-  c.country_count DESC;
+  cc.Region,
+  ROUND(SUM(CASE WHEN `Income Group` = 'High income' THEN cnt ELSE 0 END) * 100.0 / rt.total, 1) AS "High",
+  ROUND(SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN cnt ELSE 0 END) * 100.0 / rt.total, 1) AS "Upper middle",
+  ROUND(SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN cnt ELSE 0 END) * 100.0 / rt.total, 1) AS "Lower middle",
+  ROUND(SUM(CASE WHEN `Income Group` = 'Low income' THEN cnt ELSE 0 END) * 100.0 / rt.total, 1) AS "Low"
+FROM country_counts cc
+JOIN region_totals rt ON cc.Region = rt.Region
+GROUP BY cc.Region
+ORDER BY cc.Region;
 """)
 
 ```
